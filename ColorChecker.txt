@@ -1,0 +1,29 @@
+INSTALL:
+
+conda create --name colorchecker python=3.9
+conda activate colorchecker
+pip install colour-science
+pip install colour-checker-detection
+pip install matplotlib
+python -c "import imageio;imageio.plugins.freeimage.download()"
+
+////
+
+USAGE:
+
+conda activate colorchecker
+
+cd C:\Users\WORKSTATION\Desktop\colorchecker
+
+python getMatrix_000.py (Source, Target transfer)
+
+python getMatrix_001.py (X-Rite CALIBRITE ColorChecker Classic, CALIBRITE ColorChecker Passport Photo)
+
+python getMatrix_002.py (X-Rite CALIBRITE ColorChecker Passport Video)
+
+python getMatrix_003.py (SpyderCHECKR 24)
+
+
+
+
+
