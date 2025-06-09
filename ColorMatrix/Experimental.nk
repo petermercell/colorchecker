@@ -1,0 +1,104 @@
+#! /Applications/Nuke16.0v1/Nuke16.0v1.app/Contents/MacOS/libnuke-16.0.1.dylib -nx
+version 16.0 v1
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="-1" y="25" w="1440" h="801" maximized="1" screen="0">
+        <splitter orientation="1">
+            <split size="40"/>
+            <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                <page id="Toolbar.1"/>
+            </dock>
+            <split size="777" stretch="1"/>
+            <splitter orientation="2">
+                <split size="458"/>
+                <dock id="" activePageId="Viewer.1">
+                    <page id="Viewer.1"/>
+                </dock>
+                <split size="323"/>
+                <dock id="" activePageId="DAG.1" focus="true">
+                    <page id="DAG.1"/>
+                    <page id="Curve Editor.1"/>
+                    <page id="DopeSheet.1"/>
+                </dock>
+            </splitter>
+            <split size="615"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+                <page id="uk.co.thefoundry.backgroundrenderview.1"/>
+                <page id="Scenegraph.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name /Users/g/Downloads/nuke-blink-scripts-master/ColorMatrix/Experimental.nk
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement OCIO
+ OCIO_config custom
+ customOCIOConfigPath /Users/g/.nuke/color/OCIOConfigs/configs/aces_1.2/config.ocio
+ defaultViewerLUT "OCIO LUTs"
+ workingSpaceLUT scene_linear
+ monitorLut "sRGB (ACES)"
+ monitorOutLUT "Rec.709 (ACES)"
+ int8Lut matte_paint
+ int16Lut texture_paint
+ logLut compositing_log
+ floatLut scene_linear
+}
+NoOp {
+ inputs 0
+ name SAVE_NPY
+ tile_color 0xffff00ff
+ xpos -75
+ ypos -70
+ hide_input true
+ addUserKnob {20 User l SAVE_NPY}
+ addUserKnob {2 input l "" +STARTLINE}
+ input /Users/g/Downloads/BLINK/tetra.npy
+ addUserKnob {22 savenpy l SAVE_NPY T "import nuke\nimport numpy as np\n\n# Get the current Nuke node\nref_node = nuke.thisNode()\nimage_dir = ref_node\['input'].getValue()\n\n\nnode = nuke.selectedNode()\nwidth = node.width()\nheight = node.height()\n\n# Initialize empty 3D array: shape (height, width, 3)\nrgb_array = np.zeros((height, width, 3), dtype=np.float32)\n\nfor y in range(height):\n    for x in range(width):\n        r = nuke.sample(node, 'red', x, y)\n        g = nuke.sample(node, 'green', x, y)\n        b = nuke.sample(node, 'blue', x, y)\n        rgb_array\[y, x] = \[r, g, b]\n\n# Save as .npy (efficient binary for further processing)\nnp.save(image_dir, rgb_array)\n\n# Or export as CSV if needed\n#np.savetxt(\"/Users/g/Downloads/BLINK/rgb_data.csv\", rgb_array.reshape(-1, 3), delimiter=\",\", fmt=\"%.6f\")\n" +STARTLINE}
+}
+BlinkScript {
+ inputs 0
+ recompileCount 1
+ ProgramGroup 1
+ KernelDescription "3 \"ColorCube8BitFloat\" iterate pixelWise f150d117f040f2534006f0b435968e33cda1826fdf7dce5caf1b8f58cc9263e5 1 \"dst\" Write Point 0 0 0"
+ kernelSource "// BlinkScript: 256x256x256 color cube with floating-point precision\n// Uses 256 steps but with float precision instead of integer steps\nkernel ColorCube8BitFloat : ImageComputationKernel<ePixelWise>\n\{\n    Image<eWrite, eAccessPoint, eEdgeClamped> dst;\n    \n    void define() \{\n        defineParam(dst, \"dst\");\n    \}\n    \n    void process(int2 pos) \{\n        int x = pos.x;\n        int y = pos.y;\n        \n        // 4096x4096 output image to hold 256^3 = 16,777,216 pixels\n        int width = 4096;\n        int idx = y * width + x;\n        \n        const int cubeSize = 256;\n        const int maxIndex = cubeSize * cubeSize * cubeSize;\n        \n        float3 color = float3(0.0f, 0.0f, 0.0f);\n        \n        if (idx < maxIndex) \{\n            // Convert linear index to 3D RGB coordinates\n            int b = idx % cubeSize;\n            int g = (idx / cubeSize) % cubeSize;\n            int r = idx / (cubeSize * cubeSize);\n            \n            // Use high-precision floating-point division\n            // This gives much more precision than 8-bit integer (0-255)\n            color.x = (float)r / 255.0f; // Red: 0.0 to 1.0 with float precision\n            color.y = (float)g / 255.0f; // Green: 0.0 to 1.0 with float precision  \n            color.z = (float)b / 255.0f; // Blue: 0.0 to 1.0 with float precision\n        \}\n        \n        dst() = float4(color.x, color.y, color.z, 1.0f);\n    \}\n\};"
+ rebuild ""
+ format "4096 4096 0 0 4096 4096 1 square_4k"
+ rebuild_finalise ""
+ name BlinkScript1
+ xpos -73
+ ypos -188
+}
+BlinkScript {
+ inputs 0
+ recompileCount 5
+ ProgramGroup 1
+ KernelDescription "3 \"ColorCubeFloatExtended\" iterate pixelWise 3a44472107ca330c3e97d725844011646b91ef9084ec671c2591cd1e716164ad 1 \"dst\" Write Point 0 0 0"
+ kernelSource "// BlinkScript: Extended floating-point color cube\n// Supports values beyond 0-1 range (HDR-like)\nkernel ColorCubeFloatExtended : ImageComputationKernel<ePixelWise>\n\{\n    Image<eWrite, eAccessPoint, eEdgeClamped> dst;\n    \n    void define() \{\n        defineParam(dst, \"dst\");\n    \}\n    \n    void process(int2 pos) \{\n        int x = pos.x;\n        int y = pos.y;\n        \n        // Fixed parameters for extended range\n        float maxValue = 2.0f; // Maximum color value (HDR range)\n        int cubeResolution = 256; // Resolution per axis\n        \n        // Calculate required image size based on cube resolution\n        int imageSize = (int)sqrt((float)(cubeResolution * cubeResolution * cubeResolution));\n        int idx = y * imageSize + x;\n        \n        const int maxIndex = cubeResolution * cubeResolution * cubeResolution;\n        \n        float3 color = float3(0.0f, 0.0f, 0.0f);\n        \n        if (idx < maxIndex) \{\n            // Convert linear index to 3D RGB coordinates\n            int b = idx % cubeResolution;\n            int g = (idx / cubeResolution) % cubeResolution;\n            int r = idx / (cubeResolution * cubeResolution);\n            \n            // Extended floating-point range (0.0 to maxValue)\n            color.x = ((float)r / (cubeResolution - 1)) * maxValue; // Red\n            color.y = ((float)g / (cubeResolution - 1)) * maxValue; // Green\n            color.z = ((float)b / (cubeResolution - 1)) * maxValue; // Blue\n        \}\n        \n        dst() = float4(color.x, color.y, color.z, 1.0f);\n    \}\n\};"
+ rebuild ""
+ inputGroup 0
+ format "4096 4096 0 0 4096 4096 1 square_4k"
+ rebuild_finalise ""
+ name BlinkScript2
+ xpos 61
+ ypos -190
+}
+NoOp {
+ inputs 0
+ name CAL_ColorMatrix_NPY
+ tile_color 0xffff00ff
+ xpos 50
+ ypos -70
+ hide_input true
+ addUserKnob {20 User l CAL_ColorMatrix_NPY}
+ addUserKnob {2 target l TARGET}
+ target /Users/g/Downloads/BLINK/rgb_data_core.npy
+ addUserKnob {2 source l SOURCE}
+ source /Users/g/Downloads/BLINK/tetra.npy
+ addUserKnob {22 cal l CAL T "import numpy as np\nimport nuke\n\nref_node = nuke.selectedNode()\nnode = nuke.thisNode()\ntarget = node\['target'].getValue()\nsource = node\['source'].getValue()\n\ndef compute_color_matrix(source_colors, target_colors):\n    source_colors = np.array(source_colors)\n    target_colors = np.array(target_colors)\n\n    # Reshape to (num_pixels, 3)\n    source_flat = source_colors.reshape(-1, 3)\n    target_flat = target_colors.reshape(-1, 3)\n\n    # Solve for the best-fit 3x3 matrix: target ≈ source @ M\n    out_matrix = np.transpose(np.linalg.lstsq(source_flat, target_flat, rcond=None)\[0])\n\n    return out_matrix\n\n# ✅ Load .npy files\nsource_colors = np.load(source)\ntarget_colors = np.load(target)\n\n# ✅ Compute transformation matrix\ncolor_matrix = compute_color_matrix(source_colors, target_colors)\n\n# ✅ Convert to Nuke-friendly format (flattened row-major order)\nnuke_matrix = color_matrix.flatten().tolist()\n\ndef createMatrix(nuke_matrix):\n    nuke.root().begin()\n    color_matrix_node = nuke.createNode(\"ColorMatrix\")\n    color_matrix_node\[\"matrix\"].setValue(nuke_matrix)\n    return color_matrix_node\n\ndef build_tetra_chain(ref_node, nuke_matrix):\n    # Get base position\n    base_x = ref_node.xpos()\n    base_y = ref_node.ypos()\n\n    # Create ColorMatrix node directly below ref_node\n    color_matrix_node = createMatrix(nuke_matrix)\n    color_matrix_node.setInput(0, ref_node)\n    color_matrix_node.setXpos(base_x)\n    color_matrix_node.setYpos(base_y + 100)\n\n    return color_matrix_node\n\n# ✅ Build node in script\ncolor_matrix_node = build_tetra_chain(ref_node, nuke_matrix)" +STARTLINE}
+}
