@@ -1,0 +1,337 @@
+#! /Applications/Nuke16.0v1/Nuke16.0v1.app/Contents/MacOS/libnuke-16.0.1.dylib -nx
+version 16.0 v1
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="25" w="1440" h="798" maximized="1" screen="0">
+        <splitter orientation="1">
+            <split size="40"/>
+            <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                <page id="Toolbar.1"/>
+            </dock>
+            <split size="777" stretch="1"/>
+            <splitter orientation="2">
+                <split size="457"/>
+                <dock id="" activePageId="Viewer.1">
+                    <page id="Viewer.1"/>
+                </dock>
+                <split size="321"/>
+                <dock id="" activePageId="DAG.1" focus="true">
+                    <page id="DAG.1"/>
+                    <page id="Curve Editor.1"/>
+                    <page id="DopeSheet.1"/>
+                </dock>
+            </splitter>
+            <split size="615"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+                <page id="uk.co.thefoundry.backgroundrenderview.1"/>
+                <page id="Scenegraph.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name /Users/g/Downloads/nuke-blink-scripts-master/Swatches/Swatches.v001.nk
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement OCIO
+ OCIO_config custom
+ customOCIOConfigPath /Users/g/.nuke/color/OCIOConfigs/configs/aces_1.2/config.ocio
+ defaultViewerLUT "OCIO LUTs"
+ workingSpaceLUT scene_linear
+ monitorLut "sRGB (ACES)"
+ monitorOutLUT "Rec.709 (ACES)"
+ int8Lut matte_paint
+ int16Lut texture_paint
+ logLut compositing_log
+ floatLut scene_linear
+}
+ColorWheel {
+ inputs 0
+ gamma 0.45
+ name ColorWheel1
+ xpos -54
+ ypos -69
+}
+Grade {
+ multiply {0.14 1 1 1}
+ multiply_panelDropped true
+ name Grade1
+ xpos -54
+ ypos 3
+}
+Expression {
+ temp_name0 tetra
+ temp_expr0 "\t (  (b>g) ? r*(1-cyn.r) + g*(cyn.r-blu.r) + b*blu.r : ( (b>r) ? r*(1-cyn.r) + g*grn.r + b*(cyn.r-grn.r) : r*(yel.r-grn.r) + g*grn.r + b*(1-yel.r) ) ) "
+ temp_name1 tetra02
+ temp_expr1 "\t (  (b>g) ? r*(1-cyn.g) + g*(cyn.g-blu.g) + b*blu.g : ( (b>r) ? r*(1-cyn.g) + g*grn.g + b*(cyn.g-grn.g) : r*(yel.g-grn.g) + g*grn.g + b*(1-yel.g) ) ) "
+ temp_name2 tetra03
+ temp_expr2 "\t (  (b>g) ? r*(1-cyn.b) + g*(cyn.b-blu.b) + b*blu.b : ( (b>r) ? r*(1-cyn.b) + g*grn.b + b*(cyn.b-grn.b) : r*(yel.b-grn.b) + g*grn.b + b*(1-yel.b) ) )"
+ expr0 "\t(r>g) ? ( (g>b) ? r*red.r + g*(yel.r-red.r) + b*(1-yel.r) : ( (r>b) ? r*red.r + g*(1-mag.r) + b*(mag.r-red.r) : r*(mag.r-blu.r) + g*(1-mag.r) + b*blu.r ) )  \t: \ttetra"
+ expr1 "\t(r>g) ? ( (g>b) ? r*red.g + g*(yel.g-red.g) + b*(1-yel.g) : ( (r>b) ? r*red.g + g*(1-mag.g) + b*(mag.g-red.g) : r*(mag.g-blu.g) + g*(1-mag.g) + b*blu.g ) )  \t: \ttetra02"
+ expr2 "\t(r>g) ? ( (g>b) ? r*red.b + g*(yel.b-red.b) + b*(1-yel.b) : ( (r>b) ? r*red.b + g*(1-mag.b) + b*(mag.b-red.b) : r*(mag.b-blu.b) + g*(1-mag.b) + b*blu.b ) )  \t: \ttetra03"
+ name TetraAutomater2
+ xpos -54
+ ypos 41
+ addUserKnob {20 User}
+ addUserKnob {22 calculate l Calculate +INVISIBLE T "from sympy import *\n \nn = nuke.thisNode()\n \nbi = n.knob('bi').getValue()\ngi = n.knob('gi').getValue()\nri = n.knob('ri').getValue()\nyi = n.knob('yi').getValue()\nmi = n.knob('mi').getValue()\nci = n.knob('ci').getValue()\n \nbo = n.knob('bo').getValue()\ngo = n.knob('go').getValue()\nro = n.knob('ro').getValue()\nyo = n.knob('yo').getValue()\nmo = n.knob('mo').getValue()\nco = n.knob('co').getValue()\n \nr1, r2, r3, g1, g2, g3, b1, b2, b3, c1, c2, c3, m1, m2, m3, y1, y2, y3 = symbols('r1 r2 r3 g1 g2 g3 b1 b2 b3 c1 c2 c3 m1 m2 m3 y1 y2 y3')\n\nresult = solve(\[ri\[0] * r1 + ri\[1] * (y1 - r1) + ri\[2] * (1-y1) - ro\[0],\n\t\t\t\tri\[0] * r2 + ri\[1] * (y2 - r2) + ri\[2] * (1-y2) - ro\[1],\n\t\t\t\tri\[0] * r3 + ri\[1] * (y3 - r3) + ri\[2] * (1-y3) - ro\[2],\n\t\t\t\t\n\t\t\t\tgi\[0] * (y1-g1) + gi\[1] * g1 + gi\[2] * (1-y1) - go\[0],\n\t\t\t\tgi\[0] * (y2-g2) + gi\[1] * g2 + gi\[2] * (1-y2) - go\[1],\n\t\t\t\tgi\[0] * (y3-g3) + gi\[1] * g3 + gi\[2] * (1-y3) - go\[2],\n\t\t\t\t\n\t\t\t\tbi\[0] * (1-c1) + bi\[1] * (c1-b1) + bi\[2] * b1 - bo\[0],\n\t\t\t\tbi\[0] * (1-c2) + bi\[1] * (c2-b2) + bi\[2] * b2 - bo\[1],\n\t\t\t\tbi\[0] * (1-c3) + bi\[1] * (c3-b3) + bi\[2] * b3 - bo\[2],\n\t\t\t\t\n\t\t\t\tci\[0] * (1-c1) + ci\[1] * (c1-b1) + ci\[2] * b1 - co\[0],\n\t\t\t\tci\[0] * (1-c2) + ci\[1] * (c2-b2) + ci\[2] * b2 - co\[1],\n\t\t\t\tci\[0] * (1-c3) + ci\[1] * (c3-b3) + ci\[2] * b3 - co\[2],\n\t\t\t\t\n\t\t\t\tmi\[0] * r1 + mi\[1] * (1-m1) + mi\[2] * (m1-r1) - mo\[0],\n\t\t\t\tmi\[0] * r2 + mi\[1] * (1-m2) + mi\[2] * (m2-r2) - mo\[1],\n\t\t\t\tmi\[0] * r3 + mi\[1] * (1-m3) + mi\[2] * (m3-r3) - mo\[2],\n\t\t\t\t\n\t\t\t\tyi\[0] * r1 + yi\[1] * (y1 - r1) + yi\[2] * (1-y1) - yo\[0],\n\t\t\t\tyi\[0] * r2 + yi\[1] * (y2 - r2) + yi\[2] * (1-y2) - yo\[1],\n\t\t\t\tyi\[0] * r3 + yi\[1] * (y3 - r3) + yi\[2] * (1-y3) - yo\[2]],\n\t\t\t\t\n\t\t\t\t\[r1, r2, r3, g1, g2, g3, b1, b2, b3, c1, c2, c3, m1, m2, m3, y1, y2, y3])\n\nn.knob('red').setValue((result\[r1], result\[r2], result\[r3]))\nn.knob('grn').setValue((result\[g1], result\[g2], result\[g3]))\nn.knob('blu').setValue((result\[b1], result\[b2], result\[b3]))\nn.knob('cyn').setValue((result\[c1], result\[c2], result\[c3]))\nn.knob('mag').setValue((result\[m1], result\[m2], result\[m3]))\nn.knob('yel').setValue((result\[y1], result\[y2], result\[y3]))\n" +STARTLINE}
+ addUserKnob {22 reset -STARTLINE T "n = nuke.thisNode()\n \nn.knob('ri').setValue((1,0,0))\nn.knob('gi').setValue((0,1,0))\nn.knob('bi').setValue((0,0,1))\nn.knob('ci').setValue((0,1,1))\nn.knob('mi').setValue((1,0,1))\nn.knob('yi').setValue((1,1,0))\n \nn.knob('ro').setValue((1,0,0))\nn.knob('go').setValue((0,1,0))\nn.knob('bo').setValue((0,0,1))\nn.knob('co').setValue((0,1,1))\nn.knob('mo').setValue((1,0,1))\nn.knob('yo').setValue((1,1,0))"}
+ addUserKnob {26 Red l "" +STARTLINE T Red}
+ addUserKnob {18 ri l input}
+ ri {0.1400000006 2.829602636e-06 1.758292228e-06}
+ addUserKnob {6 ri_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_1_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 ro l output}
+ ro {1 0 0}
+ addUserKnob {6 ro_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 red_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 red l Red}
+ red {{(ri.b*yi.g-ro.r*yi.g-ri.g*yi.b+ro.r*yi.b+ri.g*yo.r-ri.b*yo.r)/(ri.g*yi.r-ri.b*yi.r-ri.r*yi.g+ri.b*yi.g+ri.r*yi.b-ri.g*yi.b)} {(ri.b*yi.g-ro.g*yi.g-ri.g*yi.b+ro.g*yi.b+ri.g*yo.g-ri.b*yo.g)/(ri.g*yi.r-ri.b*yi.r-ri.r*yi.g+ri.b*yi.g+ri.r*yi.b-ri.g*yi.b)} {(ri.b*yi.g-ro.b*yi.g-ri.g*yi.b+ro.b*yi.b+ri.g*yo.b-ri.b*yo.b)/(ri.g*yi.r-ri.b*yi.r-ri.r*yi.g+ri.b*yi.g+ri.r*yi.b-ri.g*yi.b)}}
+ addUserKnob {6 red_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {26 ""}
+ addUserKnob {26 Green l "" +STARTLINE T Green}
+ addUserKnob {18 gi l input}
+ gi {2.415579274e-07 1 7.314173445e-07}
+ addUserKnob {6 gi_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_2_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 go l output}
+ go {0 1 0}
+ addUserKnob {6 go_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_3_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 grn l Green}
+ grn {{(-gi.r*(ri.b-ro.r)*(yi.r-yi.g)+go.r*(ri.b*yi.r+ri.r*yi.g-ri.b*yi.g-ri.r*yi.b+ri.g*(-yi.r+yi.b))+gi.r*(ri.r-ri.g)*(yi.b-yo.r)+gi.b*(-ro.r*yi.r-ri.r*yi.g+ro.r*yi.g+ri.g*(yi.r-yo.r)+ri.r*yo.r))/((gi.r-gi.g)*(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))} {(-gi.r*(ri.b-ro.g)*(yi.r-yi.g)+go.g*(ri.b*yi.r+ri.r*yi.g-ri.b*yi.g-ri.r*yi.b+ri.g*(-yi.r+yi.b))+gi.r*(ri.r-ri.g)*(yi.b-yo.g)+gi.b*(-ro.g*yi.r-ri.r*yi.g+ro.g*yi.g+ri.g*(yi.r-yo.g)+ri.r*yo.g))/((gi.r-gi.g)*(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))} {(-gi.r*(ri.b-ro.b)*(yi.r-yi.g)+go.b*(ri.b*yi.r+ri.r*yi.g-ri.b*yi.g-ri.r*yi.b+ri.g*(-yi.r+yi.b))+gi.r*(ri.r-ri.g)*(yi.b-yo.b)+gi.b*(-ro.b*yi.r-ri.r*yi.g+ro.b*yi.g+ri.g*(yi.r-yo.b)+ri.r*yo.b))/((gi.r-gi.g)*(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))}}
+ addUserKnob {6 grn_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {26 ""}
+ addUserKnob {26 Blue l "" +STARTLINE T Blue}
+ addUserKnob {18 bi l input}
+ bi {2.416080918e-07 7.314174013e-07 0.9999998808}
+ addUserKnob {6 bi_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_4_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 bo l output}
+ bo {0 0 1}
+ addUserKnob {6 bo_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_5_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 blu_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 blu l Blue}
+ blu {{(bi.g*ci.r-bo.r*ci.r-bi.r*ci.g+bo.r*ci.g+bi.r*co.r-bi.g*co.r)/(bi.g*ci.r-bi.b*ci.r-bi.r*ci.g+bi.b*ci.g+bi.r*ci.b-bi.g*ci.b)} {(bi.g*ci.r-bo.g*ci.r-bi.r*ci.g+bo.g*ci.g+bi.r*co.g-bi.g*co.g)/(bi.g*ci.r-bi.b*ci.r-bi.r*ci.g+bi.b*ci.g+bi.r*ci.b-bi.g*ci.b)} {(bi.g*ci.r-bo.b*ci.r-bi.r*ci.g+bo.b*ci.g+bi.r*co.b-bi.g*co.b)/(bi.g*ci.r-bi.b*ci.r-bi.r*ci.g+bi.b*ci.g+bi.r*ci.b-bi.g*ci.b)}}
+ addUserKnob {6 blu_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {26 ""}
+ addUserKnob {26 Cyan l "" +STARTLINE T Cyan}
+ addUserKnob {18 ci l input}
+ ci {1.886164227e-06 0.9986360073 1}
+ addUserKnob {6 ci_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_6_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {18 co l output}
+ co {0 1 1}
+ addUserKnob {6 co_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_7_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {18 cyn l Cyan}
+ cyn {{((bi.r-bo.r)*(ci.g-ci.b)-(bi.g-bi.b)*(ci.r-co.r))/(bi.b*(ci.r-ci.g)+bi.r*(ci.g-ci.b)+bi.g*(-ci.r+ci.b))} {((bi.r-bo.g)*(ci.g-ci.b)-(bi.g-bi.b)*(ci.r-co.g))/(bi.b*(ci.r-ci.g)+bi.r*(ci.g-ci.b)+bi.g*(-ci.r+ci.b))} {((bi.r-bo.b)*(ci.g-ci.b)-(bi.g-bi.b)*(ci.r-co.b))/(bi.b*(ci.r-ci.g)+bi.r*(ci.g-ci.b)+bi.g*(-ci.r+ci.b))}}
+ addUserKnob {6 cyn_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {26 ""}
+ addUserKnob {26 Magenta l "" +STARTLINE T Magenta}
+ addUserKnob {18 mi l input}
+ mi {0.1400000006 0.0001033779554 0.9999875426}
+ addUserKnob {6 mi_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_8_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 mo l output}
+ mo {1 0 1}
+ addUserKnob {6 mo_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_9_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 mag l Magenta}
+ mag {{(mi.g*(-ri.b*yi.r-ri.r*yi.g+ri.b*yi.g+ri.g*(yi.r-yi.b)+ri.r*yi.b)+mo.r*(-ri.g*yi.r+ri.b*yi.r+ri.r*yi.g-ri.b*yi.g-ri.r*yi.b+ri.g*yi.b)+(mi.r-mi.b)*(ri.b*yi.g-ro.r*yi.g-ri.g*yi.b+ro.r*yi.b+ri.g*yo.r-ri.b*yo.r))/((mi.g-mi.b)*(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))} {(mi.g-mo.g+((-mi.r+mi.b)*(ro.g*(yi.g-yi.b)+ri.g*(yi.b-yo.g)+ri.b*(-yi.g+yo.g)))/(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))/(mi.g-mi.b)} {(mi.g-mo.b+((-mi.r+mi.b)*(ro.b*(yi.g-yi.b)+ri.g*(yi.b-yo.b)+ri.b*(-yi.g+yo.b)))/(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))/(mi.g-mi.b)}}
+ addUserKnob {6 mag_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {26 ""}
+ addUserKnob {26 Yellow l "" +STARTLINE T Yellow}
+ addUserKnob {18 yi l input}
+ yi {0.1400000006 0.9999869466 0.0001033779481}
+ addUserKnob {6 yi_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_10_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 yo l output}
+ yo {1 1 0}
+ addUserKnob {6 yo_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_11_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {18 yel l Yellow}
+ yel {{((ri.b-ro.r)*(yi.r-yi.g)-(ri.r-ri.g)*(yi.b-yo.r))/(ri.b*(yi.r-yi.g)+ri.r*(yi.g-yi.b)+ri.g*(-yi.r+yi.b))} {((ri.b-ro.g)*(yi.r-yi.g)-(ri.r-ri.g)*(yi.b-yo.g))/(ri.b*(yi.r-yi.g)+ri.r*(yi.g-yi.b)+ri.g*(-yi.r+yi.b))} {((ri.b-ro.b)*(yi.r-yi.g)-(ri.r-ri.g)*(yi.b-yo.b))/(ri.b*(yi.r-yi.g)+ri.r*(yi.g-yi.b)+ri.g*(-yi.r+yi.b))}}
+ addUserKnob {6 yel_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {20 info}
+ addUserKnob {26 info_1 l "" +STARTLINE T "<style> a:link \{ color: #ccc \}</style> <font color=#ccc><br> <b>TetraAutomater</b> <br> Matches the colors automatically. <br> <p>Originally written for matlab by <a href=https://www.juanjosalazar.com>Juanjo Salazar</a>, <br> solution translated later to python by <a href=https://www.ethanou.com>Ethan Ou\n</a> <br>\nand now an explicit algebraic solution was found using Mathematica.\n</p>"}
+}
+Constant {
+ inputs 0
+ channels rgb
+ color {0.1400000006 0.9999870062 0.0001033779481 1}
+ format "512 512 0 0 512 512 1 square_512"
+ name Yellow_Closest1
+ xpos 220
+ ypos 258
+}
+Constant {
+ inputs 0
+ channels rgb
+ color {0.1400000006 0.0001033779481 0.9999875426 1}
+ format "512 512 0 0 512 512 1 square_512"
+ name Magenta_Closest1
+ xpos 80
+ ypos 258
+}
+Constant {
+ inputs 0
+ channels rgb
+ color {1.886164114e-06 0.9986360669 1 1}
+ format "512 512 0 0 512 512 1 square_512"
+ name Cyan_Closest1
+ xpos -60
+ ypos 258
+}
+Constant {
+ inputs 0
+ channels rgb
+ color {2.416081202e-07 7.314174013e-07 1 1}
+ format "512 512 0 0 512 512 1 square_512"
+ name Blue_Closest1
+ xpos -200
+ ypos 258
+}
+Constant {
+ inputs 0
+ channels rgb
+ color {2.415579274e-07 1 7.314174013e-07 1}
+ format "512 512 0 0 512 512 1 square_512"
+ name Green_Closest1
+ xpos -340
+ ypos 258
+}
+Constant {
+ inputs 0
+ channels rgb
+ color {0.1400000006 2.829602408e-06 1.758292228e-06 1}
+ format "512 512 0 0 512 512 1 square_512"
+ name Red_Closest1
+ xpos -480
+ ypos 258
+}
+ContactSheet {
+ inputs 6
+ height 512
+ rows 1
+ columns 6
+ gap 10
+ roworder TopBottom
+ name ContactSheet2
+ xpos -80
+ ypos 456
+}
+Expression {
+ temp_name0 tetra
+ temp_expr0 "\t (  (b>g) ? r*(1-cyn.r) + g*(cyn.r-blu.r) + b*blu.r : ( (b>r) ? r*(1-cyn.r) + g*grn.r + b*(cyn.r-grn.r) : r*(yel.r-grn.r) + g*grn.r + b*(1-yel.r) ) ) "
+ temp_name1 tetra02
+ temp_expr1 "\t (  (b>g) ? r*(1-cyn.g) + g*(cyn.g-blu.g) + b*blu.g : ( (b>r) ? r*(1-cyn.g) + g*grn.g + b*(cyn.g-grn.g) : r*(yel.g-grn.g) + g*grn.g + b*(1-yel.g) ) ) "
+ temp_name2 tetra03
+ temp_expr2 "\t (  (b>g) ? r*(1-cyn.b) + g*(cyn.b-blu.b) + b*blu.b : ( (b>r) ? r*(1-cyn.b) + g*grn.b + b*(cyn.b-grn.b) : r*(yel.b-grn.b) + g*grn.b + b*(1-yel.b) ) )"
+ expr0 "\t(r>g) ? ( (g>b) ? r*red.r + g*(yel.r-red.r) + b*(1-yel.r) : ( (r>b) ? r*red.r + g*(1-mag.r) + b*(mag.r-red.r) : r*(mag.r-blu.r) + g*(1-mag.r) + b*blu.r ) )  \t: \ttetra"
+ expr1 "\t(r>g) ? ( (g>b) ? r*red.g + g*(yel.g-red.g) + b*(1-yel.g) : ( (r>b) ? r*red.g + g*(1-mag.g) + b*(mag.g-red.g) : r*(mag.g-blu.g) + g*(1-mag.g) + b*blu.g ) )  \t: \ttetra02"
+ expr2 "\t(r>g) ? ( (g>b) ? r*red.b + g*(yel.b-red.b) + b*(1-yel.b) : ( (r>b) ? r*red.b + g*(1-mag.b) + b*(mag.b-red.b) : r*(mag.b-blu.b) + g*(1-mag.b) + b*blu.b ) )  \t: \ttetra03"
+ name TetraAutomater1
+ xpos -80
+ ypos 513
+ addUserKnob {20 User}
+ addUserKnob {22 calculate l Calculate +INVISIBLE T "from sympy import *\n \nn = nuke.thisNode()\n \nbi = n.knob('bi').getValue()\ngi = n.knob('gi').getValue()\nri = n.knob('ri').getValue()\nyi = n.knob('yi').getValue()\nmi = n.knob('mi').getValue()\nci = n.knob('ci').getValue()\n \nbo = n.knob('bo').getValue()\ngo = n.knob('go').getValue()\nro = n.knob('ro').getValue()\nyo = n.knob('yo').getValue()\nmo = n.knob('mo').getValue()\nco = n.knob('co').getValue()\n \nr1, r2, r3, g1, g2, g3, b1, b2, b3, c1, c2, c3, m1, m2, m3, y1, y2, y3 = symbols('r1 r2 r3 g1 g2 g3 b1 b2 b3 c1 c2 c3 m1 m2 m3 y1 y2 y3')\n\nresult = solve(\[ri\[0] * r1 + ri\[1] * (y1 - r1) + ri\[2] * (1-y1) - ro\[0],\n\t\t\t\tri\[0] * r2 + ri\[1] * (y2 - r2) + ri\[2] * (1-y2) - ro\[1],\n\t\t\t\tri\[0] * r3 + ri\[1] * (y3 - r3) + ri\[2] * (1-y3) - ro\[2],\n\t\t\t\t\n\t\t\t\tgi\[0] * (y1-g1) + gi\[1] * g1 + gi\[2] * (1-y1) - go\[0],\n\t\t\t\tgi\[0] * (y2-g2) + gi\[1] * g2 + gi\[2] * (1-y2) - go\[1],\n\t\t\t\tgi\[0] * (y3-g3) + gi\[1] * g3 + gi\[2] * (1-y3) - go\[2],\n\t\t\t\t\n\t\t\t\tbi\[0] * (1-c1) + bi\[1] * (c1-b1) + bi\[2] * b1 - bo\[0],\n\t\t\t\tbi\[0] * (1-c2) + bi\[1] * (c2-b2) + bi\[2] * b2 - bo\[1],\n\t\t\t\tbi\[0] * (1-c3) + bi\[1] * (c3-b3) + bi\[2] * b3 - bo\[2],\n\t\t\t\t\n\t\t\t\tci\[0] * (1-c1) + ci\[1] * (c1-b1) + ci\[2] * b1 - co\[0],\n\t\t\t\tci\[0] * (1-c2) + ci\[1] * (c2-b2) + ci\[2] * b2 - co\[1],\n\t\t\t\tci\[0] * (1-c3) + ci\[1] * (c3-b3) + ci\[2] * b3 - co\[2],\n\t\t\t\t\n\t\t\t\tmi\[0] * r1 + mi\[1] * (1-m1) + mi\[2] * (m1-r1) - mo\[0],\n\t\t\t\tmi\[0] * r2 + mi\[1] * (1-m2) + mi\[2] * (m2-r2) - mo\[1],\n\t\t\t\tmi\[0] * r3 + mi\[1] * (1-m3) + mi\[2] * (m3-r3) - mo\[2],\n\t\t\t\t\n\t\t\t\tyi\[0] * r1 + yi\[1] * (y1 - r1) + yi\[2] * (1-y1) - yo\[0],\n\t\t\t\tyi\[0] * r2 + yi\[1] * (y2 - r2) + yi\[2] * (1-y2) - yo\[1],\n\t\t\t\tyi\[0] * r3 + yi\[1] * (y3 - r3) + yi\[2] * (1-y3) - yo\[2]],\n\t\t\t\t\n\t\t\t\t\[r1, r2, r3, g1, g2, g3, b1, b2, b3, c1, c2, c3, m1, m2, m3, y1, y2, y3])\n\nn.knob('red').setValue((result\[r1], result\[r2], result\[r3]))\nn.knob('grn').setValue((result\[g1], result\[g2], result\[g3]))\nn.knob('blu').setValue((result\[b1], result\[b2], result\[b3]))\nn.knob('cyn').setValue((result\[c1], result\[c2], result\[c3]))\nn.knob('mag').setValue((result\[m1], result\[m2], result\[m3]))\nn.knob('yel').setValue((result\[y1], result\[y2], result\[y3]))\n" +STARTLINE}
+ addUserKnob {22 reset -STARTLINE T "n = nuke.thisNode()\n \nn.knob('ri').setValue((1,0,0))\nn.knob('gi').setValue((0,1,0))\nn.knob('bi').setValue((0,0,1))\nn.knob('ci').setValue((0,1,1))\nn.knob('mi').setValue((1,0,1))\nn.knob('yi').setValue((1,1,0))\n \nn.knob('ro').setValue((1,0,0))\nn.knob('go').setValue((0,1,0))\nn.knob('bo').setValue((0,0,1))\nn.knob('co').setValue((0,1,1))\nn.knob('mo').setValue((1,0,1))\nn.knob('yo').setValue((1,1,0))"}
+ addUserKnob {26 Red l "" +STARTLINE T Red}
+ addUserKnob {18 ri l input}
+ ri {0.1400000006 2.829602636e-06 1.758292228e-06}
+ addUserKnob {6 ri_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_1_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 ro l output}
+ ro {1 0 0}
+ addUserKnob {6 ro_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 red_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 red l Red}
+ red {{(ri.b*yi.g-ro.r*yi.g-ri.g*yi.b+ro.r*yi.b+ri.g*yo.r-ri.b*yo.r)/(ri.g*yi.r-ri.b*yi.r-ri.r*yi.g+ri.b*yi.g+ri.r*yi.b-ri.g*yi.b)} {(ri.b*yi.g-ro.g*yi.g-ri.g*yi.b+ro.g*yi.b+ri.g*yo.g-ri.b*yo.g)/(ri.g*yi.r-ri.b*yi.r-ri.r*yi.g+ri.b*yi.g+ri.r*yi.b-ri.g*yi.b)} {(ri.b*yi.g-ro.b*yi.g-ri.g*yi.b+ro.b*yi.b+ri.g*yo.b-ri.b*yo.b)/(ri.g*yi.r-ri.b*yi.r-ri.r*yi.g+ri.b*yi.g+ri.r*yi.b-ri.g*yi.b)}}
+ addUserKnob {6 red_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {26 ""}
+ addUserKnob {26 Green l "" +STARTLINE T Green}
+ addUserKnob {18 gi l input}
+ gi {2.415579274e-07 1 7.314173445e-07}
+ addUserKnob {6 gi_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_2_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 go l output}
+ go {0 1 0}
+ addUserKnob {6 go_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_3_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 grn l Green}
+ grn {{(-gi.r*(ri.b-ro.r)*(yi.r-yi.g)+go.r*(ri.b*yi.r+ri.r*yi.g-ri.b*yi.g-ri.r*yi.b+ri.g*(-yi.r+yi.b))+gi.r*(ri.r-ri.g)*(yi.b-yo.r)+gi.b*(-ro.r*yi.r-ri.r*yi.g+ro.r*yi.g+ri.g*(yi.r-yo.r)+ri.r*yo.r))/((gi.r-gi.g)*(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))} {(-gi.r*(ri.b-ro.g)*(yi.r-yi.g)+go.g*(ri.b*yi.r+ri.r*yi.g-ri.b*yi.g-ri.r*yi.b+ri.g*(-yi.r+yi.b))+gi.r*(ri.r-ri.g)*(yi.b-yo.g)+gi.b*(-ro.g*yi.r-ri.r*yi.g+ro.g*yi.g+ri.g*(yi.r-yo.g)+ri.r*yo.g))/((gi.r-gi.g)*(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))} {(-gi.r*(ri.b-ro.b)*(yi.r-yi.g)+go.b*(ri.b*yi.r+ri.r*yi.g-ri.b*yi.g-ri.r*yi.b+ri.g*(-yi.r+yi.b))+gi.r*(ri.r-ri.g)*(yi.b-yo.b)+gi.b*(-ro.b*yi.r-ri.r*yi.g+ro.b*yi.g+ri.g*(yi.r-yo.b)+ri.r*yo.b))/((gi.r-gi.g)*(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))}}
+ addUserKnob {6 grn_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {26 ""}
+ addUserKnob {26 Blue l "" +STARTLINE T Blue}
+ addUserKnob {18 bi l input}
+ bi {2.416080918e-07 7.314174013e-07 0.9999998808}
+ addUserKnob {6 bi_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_4_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 bo l output}
+ bo {0 0 1}
+ addUserKnob {6 bo_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_5_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 blu_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 blu l Blue}
+ blu {{(bi.g*ci.r-bo.r*ci.r-bi.r*ci.g+bo.r*ci.g+bi.r*co.r-bi.g*co.r)/(bi.g*ci.r-bi.b*ci.r-bi.r*ci.g+bi.b*ci.g+bi.r*ci.b-bi.g*ci.b)} {(bi.g*ci.r-bo.g*ci.r-bi.r*ci.g+bo.g*ci.g+bi.r*co.g-bi.g*co.g)/(bi.g*ci.r-bi.b*ci.r-bi.r*ci.g+bi.b*ci.g+bi.r*ci.b-bi.g*ci.b)} {(bi.g*ci.r-bo.b*ci.r-bi.r*ci.g+bo.b*ci.g+bi.r*co.b-bi.g*co.b)/(bi.g*ci.r-bi.b*ci.r-bi.r*ci.g+bi.b*ci.g+bi.r*ci.b-bi.g*ci.b)}}
+ addUserKnob {6 blu_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {26 ""}
+ addUserKnob {26 Cyan l "" +STARTLINE T Cyan}
+ addUserKnob {18 ci l input}
+ ci {1.886164227e-06 0.9986360073 1}
+ addUserKnob {6 ci_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_6_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {18 co l output}
+ co {0 1 1}
+ addUserKnob {6 co_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_7_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {18 cyn l Cyan}
+ cyn {{((bi.r-bo.r)*(ci.g-ci.b)-(bi.g-bi.b)*(ci.r-co.r))/(bi.b*(ci.r-ci.g)+bi.r*(ci.g-ci.b)+bi.g*(-ci.r+ci.b))} {((bi.r-bo.g)*(ci.g-ci.b)-(bi.g-bi.b)*(ci.r-co.g))/(bi.b*(ci.r-ci.g)+bi.r*(ci.g-ci.b)+bi.g*(-ci.r+ci.b))} {((bi.r-bo.b)*(ci.g-ci.b)-(bi.g-bi.b)*(ci.r-co.b))/(bi.b*(ci.r-ci.g)+bi.r*(ci.g-ci.b)+bi.g*(-ci.r+ci.b))}}
+ addUserKnob {6 cyn_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {26 ""}
+ addUserKnob {26 Magenta l "" +STARTLINE T Magenta}
+ addUserKnob {18 mi l input}
+ mi {0.1400000006 0.0001033779554 0.9999875426}
+ addUserKnob {6 mi_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_8_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 mo l output}
+ mo {1 0 1}
+ addUserKnob {6 mo_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_9_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 mag l Magenta}
+ mag {{(mi.g*(-ri.b*yi.r-ri.r*yi.g+ri.b*yi.g+ri.g*(yi.r-yi.b)+ri.r*yi.b)+mo.r*(-ri.g*yi.r+ri.b*yi.r+ri.r*yi.g-ri.b*yi.g-ri.r*yi.b+ri.g*yi.b)+(mi.r-mi.b)*(ri.b*yi.g-ro.r*yi.g-ri.g*yi.b+ro.r*yi.b+ri.g*yo.r-ri.b*yo.r))/((mi.g-mi.b)*(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))} {(mi.g-mo.g+((-mi.r+mi.b)*(ro.g*(yi.g-yi.b)+ri.g*(yi.b-yo.g)+ri.b*(-yi.g+yo.g)))/(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))/(mi.g-mi.b)} {(mi.g-mo.b+((-mi.r+mi.b)*(ro.b*(yi.g-yi.b)+ri.g*(yi.b-yo.b)+ri.b*(-yi.g+yo.b)))/(ri.b*(-yi.r+yi.g)+ri.g*(yi.r-yi.b)+ri.r*(-yi.g+yi.b)))/(mi.g-mi.b)}}
+ addUserKnob {6 mag_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {26 ""}
+ addUserKnob {26 Yellow l "" +STARTLINE T Yellow}
+ addUserKnob {18 yi l input}
+ yi {0.1400000006 0.9999869466 0.0001033779481}
+ addUserKnob {6 yi_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_10_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {18 yo l output}
+ yo {1 1 0}
+ addUserKnob {6 yo_panelDropped l "panel dropped state" -STARTLINE +HIDDEN}
+ addUserKnob {6 color_rgb_11_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {18 yel l Yellow}
+ yel {{((ri.b-ro.r)*(yi.r-yi.g)-(ri.r-ri.g)*(yi.b-yo.r))/(ri.b*(yi.r-yi.g)+ri.r*(yi.g-yi.b)+ri.g*(-yi.r+yi.b))} {((ri.b-ro.g)*(yi.r-yi.g)-(ri.r-ri.g)*(yi.b-yo.g))/(ri.b*(yi.r-yi.g)+ri.r*(yi.g-yi.b)+ri.g*(-yi.r+yi.b))} {((ri.b-ro.b)*(yi.r-yi.g)-(ri.r-ri.g)*(yi.b-yo.b))/(ri.b*(yi.r-yi.g)+ri.r*(yi.g-yi.b)+ri.g*(-yi.r+yi.b))}}
+ addUserKnob {6 yel_panelDropped l "panel dropped state" +HIDDEN +STARTLINE}
+ addUserKnob {20 info}
+ addUserKnob {26 info_1 l "" +STARTLINE T "<style> a:link \{ color: #ccc \}</style> <font color=#ccc><br> <b>TetraAutomater</b> <br> Matches the colors automatically. <br> <p>Originally written for matlab by <a href=https://www.juanjosalazar.com>Juanjo Salazar</a>, <br> solution translated later to python by <a href=https://www.ethanou.com>Ethan Ou\n</a> <br>\nand now an explicit algebraic solution was found using Mathematica.\n</p>"}
+}
+NoOp {
+ inputs 0
+ name SWATCHES_RGBCMY
+ tile_color 0xffff00ff
+ xpos 128
+ ypos 30
+ hide_input true
+ addUserKnob {20 User l SWATCHES_RGBCMY}
+ addUserKnob {22 rgbcmy l RGBCMY T "import nuke\nimport numpy as np\n\ndef find_closest_palette_colors(sample_step=10):\n    node = nuke.selectedNode()\n\n    if node is None:\n        nuke.message(\"Please select a node to analyze.\")\n        return\n\n    width = node.width()\n    height = node.height()\n\n    # Target palette: RGB + CMY\n    palette = \{\n        \"Red\":      np.array(\[1.0, 0.0, 0.0]),\n        \"Green\":    np.array(\[0.0, 1.0, 0.0]),\n        \"Blue\":     np.array(\[0.0, 0.0, 1.0]),\n        \"Cyan\":     np.array(\[0.0, 1.0, 1.0]),\n        \"Magenta\":  np.array(\[1.0, 0.0, 1.0]),\n        \"Yellow\":   np.array(\[1.0, 1.0, 0.0]),\n    \}\n\n    pixels = \[]\n    for y in range(0, height, sample_step):\n        for x in range(0, width, sample_step):\n            r = node.sample('red', x, y)\n            g = node.sample('green', x, y)\n            b = node.sample('blue', x, y)\n            pixels.append(np.array(\[r, g, b]))\n\n    # Find closest match for each palette color\n    closest_colors = \{\}\n\n    for name, target in palette.items():\n        min_dist = float('inf')\n        closest = None\n        for color in pixels:\n            dist = np.linalg.norm(color - target)\n            if dist < min_dist:\n                min_dist = dist\n                closest = color\n        closest_colors\[name] = closest\n\n    # Create Constant nodes for each closest color\n    xpos = node.xpos()\n    ypos = node.ypos() + 120\n\n    # Collect constant nodes for ContactSheet\n    swatch_nodes = \[]\n\n    for i, (name, color) in enumerate(closest_colors.items()):\n        const_node = nuke.createNode(\"Constant\")\n        const_node\['format'].setValue(\"square_512\")\n        const_node\['color'].setValue(float(color\[0]), 0)\n        const_node\['color'].setValue(float(color\[1]), 1)\n        const_node\['color'].setValue(float(color\[2]), 2)\n        const_node\['color'].setValue(1.0, 3)  # Alpha\n        const_node.setXYpos(xpos + i * 140, ypos)\n        const_node.setName(f\"\{name\}_Closest\")\n        swatch_nodes.append(const_node)\n\n    # Create a ContactSheet node\n    contact_sheet = nuke.createNode(\"ContactSheet\")\n    contact_sheet.setXYpos(xpos + 400, ypos + 200)\n    contact_sheet\['width'].setValue(3072)\n    contact_sheet\['height'].setValue(512)\n    contact_sheet\['rows'].setValue(1)\n    contact_sheet\['columns'].setValue(6)\n    contact_sheet\['roworder'].setValue('TopBottom')\n    contact_sheet\['gap'].setValue(10)\n\n    # Connect all swatches to ContactSheet\n    for i, node in enumerate(swatch_nodes):\n        contact_sheet.setInput(i, node)\n\n    #nuke.message(\"ContactSheet created with 6 swatches.\")\n\n\n\nfind_closest_palette_colors(sample_step=5)" +STARTLINE}
+ addUserKnob {22 ten l TEN -STARTLINE T "import nuke\nimport numpy as np\nfrom collections import Counter\n\ndef create_color_swatches(num_colors=5, sample_step=10, bin_size=0.1):\n    node = nuke.selectedNode()\n    \n    if node is None:\n        nuke.message(\"Please select a node to analyze.\")\n        return\n\n    width = node.width()\n    height = node.height()\n\n    pixels = \[]\n    \n    for y in range(0, height, sample_step):\n        for x in range(0, width, sample_step):\n            r = node.sample('red', x, y)\n            g = node.sample('green', x, y)\n            b = node.sample('blue', x, y)\n            # Quantize color by binning\n            r_bin = round(r / bin_size) * bin_size\n            g_bin = round(g / bin_size) * bin_size\n            b_bin = round(b / bin_size) * bin_size\n            pixels.append((r_bin, g_bin, b_bin))\n\n    # Count most common color bins\n    counter = Counter(pixels)\n    dominant_colors = \[color for color, _ in counter.most_common(num_colors)]\n\n    # Create swatches as Constant nodes\n    xpos = node.xpos()\n    ypos = node.ypos() + 100\n\n    for i, color in enumerate(dominant_colors):\n        r, g, b = color\n        const_node = nuke.createNode(\"Constant\")\n        const_node\['color'].setValue(r, 0)\n        const_node\['color'].setValue(g, 1)\n        const_node\['color'].setValue(b, 2)\n        const_node\['color'].setValue(1.0, 3)  # Alpha\n        const_node.setXYpos(xpos + i * 120, ypos)\n\n    #nuke.message(f\"Created \{len(dominant_colors)\} color swatches.\")\n\n\ncreate_color_swatches(num_colors=10, sample_step=10, bin_size=0.1)"}
+}
