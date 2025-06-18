@@ -1,0 +1,134 @@
+#! /Applications/Nuke16.0v1/Nuke16.0v1.app/Contents/MacOS/libnuke-16.0.1.dylib -nx
+version 16.0 v1
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="25" w="1440" h="798" maximized="1" screen="0">
+        <splitter orientation="1">
+            <split size="40"/>
+            <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                <page id="Toolbar.1"/>
+            </dock>
+            <split size="777" stretch="1"/>
+            <splitter orientation="2">
+                <split size="457"/>
+                <dock id="" activePageId="Viewer.1">
+                    <page id="Viewer.1"/>
+                </dock>
+                <split size="321"/>
+                <dock id="" activePageId="DAG.1" focus="true">
+                    <page id="DAG.1"/>
+                    <page id="Curve Editor.1"/>
+                    <page id="DopeSheet.1"/>
+                </dock>
+            </splitter>
+            <split size="615"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+                <page id="uk.co.thefoundry.backgroundrenderview.1"/>
+                <page id="Scenegraph.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name /Users/g/Downloads/180625_MEGA_ZAUJIMAVE/HSP.nk
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement OCIO
+ OCIO_config custom
+ customOCIOConfigPath /Users/g/.nuke/color/OCIOConfigs/configs/aces_1.2/config.ocio
+ defaultViewerLUT "OCIO LUTs"
+ workingSpaceLUT scene_linear
+ monitorLut "sRGB (ACES)"
+ monitorOutLUT "Rec.709 (ACES)"
+ int8Lut matte_paint
+ int16Lut texture_paint
+ logLut compositing_log
+ floatLut scene_linear
+}
+ColorWheel {
+ inputs 0
+ gamma 0.45
+ name ColorWheel1
+ xpos -172
+ ypos -111
+}
+set N3164e600 [stack 0]
+Group {
+ name HSP
+ xpos -172
+ ypos 18
+ addUserKnob {20 User}
+ addUserKnob {26 info l "" +STARTLINE T "RGB to HSP \nby Mads Hagbarth Damsbo 2017"}
+ addUserKnob {26 ""}
+ addUserKnob {6 Reverse +STARTLINE}
+}
+ Input {
+  inputs 0
+  name Input1
+  xpos -313
+  ypos -33
+ }
+ BlinkScript {
+  recompileCount 2
+  ProgramGroup 1
+  KernelDescription "3 \"SaturationKernel\" iterate pixelWise b4a128a23c6a75e1ab8540d9e9fdaf20160d7e1a42d5387b88643ecd9db08689 2 \"src\" Read Point \"dst\" Write Point 1 \"reverse\" Bool 1 AA== 1 \"reverse\" 1 1 Default 0"
+  kernelSource "kernel SaturationKernel : ImageComputationKernel<ePixelWise>\n\{\n  Image<eRead, eAccessPoint, eEdgeClamped> src; // the input image\n  Image<eWrite> dst; // the output image\n\n  param:\n    bool reverse;\n\n  local:\n\n  void define() \{\n  \}\n\n  void init() \{\n  \}\n\n\nfloat4 RGBtoHSP(float4 _in) \{\n  // Don't ask...\n  float R=_in.x;\n  float G=_in.y;\n  float B=_in.z;\n  float H,S,P;\n  float Pr = 0.299f;\n  float Pg = 0.587f;\n  float Pb = 0.114f;\n  P=sqrt(R*R*Pr+G*G*Pg+B*B*Pb);\n    if      (R==G && R==B) \{\n        H=0.0f; S=0.0f; \n    \}\n    else \{\n      if      (R>=G && R>=B) \{   //  R is largest\n        if    (B>=G) \{\n          H=6./6.-1./6.*(B-G)/(R-G); S=1.-G/R; \}\n        else         \{\n          H=0./6.+1./6.*(G-B)/(R-B); S=1.-B/R; \}\}\n      else if (G>=R && G>=B) \{   //  G is largest\n        if    (R>=B) \{\n          H=2./6.-1./6.*(R-B)/(G-B); S=1.-B/G; \}\n        else         \{\n          H=2./6.+1./6.*(B-R)/(G-R); S=1.-R/G; \}\}\n      else                   \{   //  B is largest\n        if    (G>=R) \{\n          H=4./6.-1./6.*(G-R)/(B-R); S=1.-R/B; \}\n        else         \{\n          H=4./6.+1./6.*(R-G)/(B-G); S=1.-G/B; \}\}\}\n  return float4(H,S,P,_in.w);\n  \}\n\nfloat4 HSPtoRGB(float4 _in) \{\n  // Don't ask...\n  float H=_in.x;\n  float S=_in.y;\n  float P=_in.z;\n  float R,G,B;\n  float Pr = 0.299f;\n  float Pg = 0.587f;\n  float Pb = 0.114f;\n  float  part, minOverMax=1.-S ;\n\n  if (minOverMax>0.) \{\n    if      ( H<1./6.) \{   //  R>G>B\n      H= 6.*( H-0./6.); part=1.+H*(1./minOverMax-1.);\n      B=P/sqrt(Pr/minOverMax/minOverMax+Pg*part*part+Pb);\n      R=(B)/minOverMax; G=(B)+H*((R)-(B)); \}\n    else if ( H<2./6.) \{   //  G>R>B\n      H= 6.*(-H+2./6.); part=1.+H*(1./minOverMax-1.);\n      B=P/sqrt(Pg/minOverMax/minOverMax+Pr*part*part+Pb);\n      G=(B)/minOverMax; R=(B)+H*((G)-(B)); \}\n    else if ( H<3./6.) \{   //  G>B>R\n      H= 6.*( H-2./6.); part=1.+H*(1./minOverMax-1.);\n      R=P/sqrt(Pg/minOverMax/minOverMax+Pb*part*part+Pr);\n      G=(R)/minOverMax; B=(R)+H*((G)-(R)); \}\n    else if ( H<4./6.) \{   //  B>G>R\n      H= 6.*(-H+4./6.); part=1.+H*(1./minOverMax-1.);\n      R=P/sqrt(Pb/minOverMax/minOverMax+Pg*part*part+Pr);\n      B=(R)/minOverMax; G=(R)+H*((B)-(R)); \}\n    else if ( H<5./6.) \{   //  B>R>G\n      H= 6.*( H-4./6.); part=1.+H*(1./minOverMax-1.);\n      G=P/sqrt(Pb/minOverMax/minOverMax+Pr*part*part+Pg);\n      B=(G)/minOverMax; R=(G)+H*((B)-(G)); \}\n    else               \{   //  R>B>G\n      H= 6.*(-H+6./6.); part=1.+H*(1./minOverMax-1.);\n      G=P/sqrt(Pr/minOverMax/minOverMax+Pb*part*part+Pg);\n      R=(G)/minOverMax; B=(G)+H*((R)-(G)); \}\}\n  else \{\n    if      ( H<1./6.) \{   //  R>G>B\n      H= 6.*( H-0./6.); R=sqrt(P*P/(Pr+Pg*H*H)); G=(R)*H; B=0.; \}\n    else if ( H<2./6.) \{   //  G>R>B\n      H= 6.*(-H+2./6.); G=sqrt(P*P/(Pg+Pr*H*H)); R=(G)*H; B=0.; \}\n    else if ( H<3./6.) \{   //  G>B>R\n      H= 6.*( H-2./6.); G=sqrt(P*P/(Pg+Pb*H*H)); B=(G)*H; R=0.; \}\n    else if ( H<4./6.) \{   //  B>G>R\n      H= 6.*(-H+4./6.); B=sqrt(P*P/(Pb+Pg*H*H)); G=(B)*H; R=0.; \}\n    else if ( H<5./6.) \{   //  B>R>G\n      H= 6.*( H-4./6.); B=sqrt(P*P/(Pb+Pr*H*H)); R=(B)*H; G=0.; \}\n    else               \{   //  R>B>G\n      H= 6.*(-H+6./6.); R=sqrt(P*P/(Pr+Pb*H*H)); B=(R)*H; G=0.; \}\}\n  return float4(R,G,B,_in.w);\n  \}\n\n  void process() \{\n    float4 sample = src();\n    float4 output;\n    if (!reverse)\{\n        output = RGBtoHSP(sample);\n    \}\n    else\{\n        output = HSPtoRGB(sample);\n    \}\n\n    dst() = output;\n  \}\n\};\n"
+  rebuild ""
+  SaturationKernel_reverse {{parent.Reverse}}
+  rebuild_finalise ""
+  name BlinkScript1
+  xpos -313
+  ypos 28
+ }
+ Output {
+  name Output1
+  xpos -313
+  ypos 107
+ }
+end_group
+Group {
+ name HSP1
+ xpos -172
+ ypos 112
+ addUserKnob {20 User}
+ addUserKnob {26 info l "" +STARTLINE T "RGB to HSP \nby Mads Hagbarth Damsbo 2017"}
+ addUserKnob {26 ""}
+ addUserKnob {6 Reverse +STARTLINE}
+ Reverse true
+}
+ Input {
+  inputs 0
+  name Input1
+  xpos -313
+  ypos -33
+ }
+ BlinkScript {
+  recompileCount 2
+  ProgramGroup 1
+  KernelDescription "3 \"SaturationKernel\" iterate pixelWise b4a128a23c6a75e1ab8540d9e9fdaf20160d7e1a42d5387b88643ecd9db08689 2 \"src\" Read Point \"dst\" Write Point 1 \"reverse\" Bool 1 AA== 1 \"reverse\" 1 1 Default 0"
+  kernelSource "kernel SaturationKernel : ImageComputationKernel<ePixelWise>\n\{\n  Image<eRead, eAccessPoint, eEdgeClamped> src; // the input image\n  Image<eWrite> dst; // the output image\n\n  param:\n    bool reverse;\n\n  local:\n\n  void define() \{\n  \}\n\n  void init() \{\n  \}\n\n\nfloat4 RGBtoHSP(float4 _in) \{\n  // Don't ask...\n  float R=_in.x;\n  float G=_in.y;\n  float B=_in.z;\n  float H,S,P;\n  float Pr = 0.299f;\n  float Pg = 0.587f;\n  float Pb = 0.114f;\n  P=sqrt(R*R*Pr+G*G*Pg+B*B*Pb);\n    if      (R==G && R==B) \{\n        H=0.0f; S=0.0f; \n    \}\n    else \{\n      if      (R>=G && R>=B) \{   //  R is largest\n        if    (B>=G) \{\n          H=6./6.-1./6.*(B-G)/(R-G); S=1.-G/R; \}\n        else         \{\n          H=0./6.+1./6.*(G-B)/(R-B); S=1.-B/R; \}\}\n      else if (G>=R && G>=B) \{   //  G is largest\n        if    (R>=B) \{\n          H=2./6.-1./6.*(R-B)/(G-B); S=1.-B/G; \}\n        else         \{\n          H=2./6.+1./6.*(B-R)/(G-R); S=1.-R/G; \}\}\n      else                   \{   //  B is largest\n        if    (G>=R) \{\n          H=4./6.-1./6.*(G-R)/(B-R); S=1.-R/B; \}\n        else         \{\n          H=4./6.+1./6.*(R-G)/(B-G); S=1.-G/B; \}\}\}\n  return float4(H,S,P,_in.w);\n  \}\n\nfloat4 HSPtoRGB(float4 _in) \{\n  // Don't ask...\n  float H=_in.x;\n  float S=_in.y;\n  float P=_in.z;\n  float R,G,B;\n  float Pr = 0.299f;\n  float Pg = 0.587f;\n  float Pb = 0.114f;\n  float  part, minOverMax=1.-S ;\n\n  if (minOverMax>0.) \{\n    if      ( H<1./6.) \{   //  R>G>B\n      H= 6.*( H-0./6.); part=1.+H*(1./minOverMax-1.);\n      B=P/sqrt(Pr/minOverMax/minOverMax+Pg*part*part+Pb);\n      R=(B)/minOverMax; G=(B)+H*((R)-(B)); \}\n    else if ( H<2./6.) \{   //  G>R>B\n      H= 6.*(-H+2./6.); part=1.+H*(1./minOverMax-1.);\n      B=P/sqrt(Pg/minOverMax/minOverMax+Pr*part*part+Pb);\n      G=(B)/minOverMax; R=(B)+H*((G)-(B)); \}\n    else if ( H<3./6.) \{   //  G>B>R\n      H= 6.*( H-2./6.); part=1.+H*(1./minOverMax-1.);\n      R=P/sqrt(Pg/minOverMax/minOverMax+Pb*part*part+Pr);\n      G=(R)/minOverMax; B=(R)+H*((G)-(R)); \}\n    else if ( H<4./6.) \{   //  B>G>R\n      H= 6.*(-H+4./6.); part=1.+H*(1./minOverMax-1.);\n      R=P/sqrt(Pb/minOverMax/minOverMax+Pg*part*part+Pr);\n      B=(R)/minOverMax; G=(R)+H*((B)-(R)); \}\n    else if ( H<5./6.) \{   //  B>R>G\n      H= 6.*( H-4./6.); part=1.+H*(1./minOverMax-1.);\n      G=P/sqrt(Pb/minOverMax/minOverMax+Pr*part*part+Pg);\n      B=(G)/minOverMax; R=(G)+H*((B)-(G)); \}\n    else               \{   //  R>B>G\n      H= 6.*(-H+6./6.); part=1.+H*(1./minOverMax-1.);\n      G=P/sqrt(Pr/minOverMax/minOverMax+Pb*part*part+Pg);\n      R=(G)/minOverMax; B=(G)+H*((R)-(G)); \}\}\n  else \{\n    if      ( H<1./6.) \{   //  R>G>B\n      H= 6.*( H-0./6.); R=sqrt(P*P/(Pr+Pg*H*H)); G=(R)*H; B=0.; \}\n    else if ( H<2./6.) \{   //  G>R>B\n      H= 6.*(-H+2./6.); G=sqrt(P*P/(Pg+Pr*H*H)); R=(G)*H; B=0.; \}\n    else if ( H<3./6.) \{   //  G>B>R\n      H= 6.*( H-2./6.); G=sqrt(P*P/(Pg+Pb*H*H)); B=(G)*H; R=0.; \}\n    else if ( H<4./6.) \{   //  B>G>R\n      H= 6.*(-H+4./6.); B=sqrt(P*P/(Pb+Pg*H*H)); G=(B)*H; R=0.; \}\n    else if ( H<5./6.) \{   //  B>R>G\n      H= 6.*( H-4./6.); B=sqrt(P*P/(Pb+Pr*H*H)); R=(B)*H; G=0.; \}\n    else               \{   //  R>B>G\n      H= 6.*(-H+6./6.); R=sqrt(P*P/(Pr+Pb*H*H)); B=(R)*H; G=0.; \}\}\n  return float4(R,G,B,_in.w);\n  \}\n\n  void process() \{\n    float4 sample = src();\n    float4 output;\n    if (!reverse)\{\n        output = RGBtoHSP(sample);\n    \}\n    else\{\n        output = HSPtoRGB(sample);\n    \}\n\n    dst() = output;\n  \}\n\};\n"
+  rebuild ""
+  SaturationKernel_reverse {{parent.Reverse}}
+  rebuild_finalise ""
+  name BlinkScript1
+  xpos -313
+  ypos 28
+ }
+ Output {
+  name Output1
+  xpos -313
+  ypos 107
+ }
+end_group
+push $N3164e600
+Merge2 {
+ inputs 2
+ operation difference
+ name Merge1
+ xpos 47
+ ypos 117
+}
